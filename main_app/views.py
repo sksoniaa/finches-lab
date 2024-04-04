@@ -1,7 +1,11 @@
-from django.shortcuts import render
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.shortcuts import render, redirect
 
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+# from the ./models import Finch
 from .models import Finch
+from .forms import FeedingForm
+
+
 
 def home(request):
 	return render(request, 'home.html')
@@ -38,11 +42,34 @@ def finches_index(request):
 		# res.render('cats/index', {'cats': cats})
   })
 
+
+# cat_id comes from the path in the urls.py 
+# path('cats/<int:cat_id>/', views.cats_detail, name='detail'),
 def finches_detail(request, finch_id):
 	# tell the model to find the row that matches cat_id from the request in the database
 	finch = Finch.objects.get(id=finch_id)
+
+	# instatiate the feeding form class to create an instance of the class
+	# in otherwords a form object
+	feeding_form = FeedingForm()
 	return render(request, 'finches/detail.html', {
-		'finch': finch
-		# finch (the key) is the variable name in cats/detail.html 
+		'finch': finch,
+		'feeding_form': feeding_form
+		# 'cat is the variable name in cats/detail.html 
 	})
 
+# 'cats/<int:cat_id>/add_feeding/'
+def add_feeding(request, finch_id):
+	# process the form request form the client
+	form = FeedingForm(request.POST)
+	# request.POST is like req.body, its the contents of the form
+	# validate the form
+	if form.is_valid():
+		# create an in memory instance (on django) of our data
+		# to be added to psql, commit=False, don't save to db yet
+		new_feeding = form.save(commit=False)
+		# now we want to make sure we add the cat id to the new_feeding
+		new_feeding.finch_id = finch_id
+		new_feeding.save() # this is adding a feeding row to the feeding table in psql
+	return redirect('detail', finch_id=finch_id) #cat_id is the name of the param in the url path, 
+	# cat_id, is the id of the cat from the url request
